@@ -1,176 +1,358 @@
-/* This example requires Tailwind CSS v2.0+ */
-import { Disclosure, Menu, Transition } from '@headlessui/react';
-import { BellIcon, MenuIcon, XIcon } from '@heroicons/react/outline';
+import { Button } from '@components/Button/Button';
+import Text from '@components/Text/Text';
+import { useRouter } from 'next/dist/client/router';
 import Image from 'next/image';
-import { Fragment } from 'react';
+import Link from 'next/link';
+import React, {
+  MutableRefObject,
+  ReactNode,
+  useEffect,
+  useImperativeHandle,
+  useState
+} from 'react';
+import styled from 'styled-components';
+import tw from 'twin.macro';
 
-const navigation = [
-  { name: 'Dashboard', href: '#', current: true },
-  { name: 'Team', href: '#', current: false },
-  { name: 'Projects', href: '#', current: false },
-  { name: 'Calendar', href: '#', current: false }
+export interface MenuItemPropsInterface {
+  isActive?: boolean;
+  label: string;
+  handleClick: () => void;
+}
+
+const Divider = styled.div`
+  border: 1px solid #ffffff;
+  height: 25px;
+  margin: 0 18px 0 9px;
+  width: 1px;
+`;
+
+const MenuItemText = styled.a`
+  ${tw`btn btn-ghost btn-sm no-animation relative`}
+  padding: 0 9px;
+
+  .indicator {
+    background-color: white;
+    border-radius: 50;
+    bottom: 0;
+    height: 2px;
+    position: absolute;
+    transition: all 0.1s ease-in;
+    width: 0;
+  }
+  .active {
+    width: calc(100% - 16px);
+  }
+`;
+
+const ActiveIndicator = styled.div``;
+
+const MenuItem = (props: MenuItemPropsInterface) => {
+  return (
+    <MenuItemText onClick={props.handleClick}>
+      <Text fontWeight={700} className="hover:text-primary-gold-1 text-white">
+        {props.label}
+      </Text>
+      <ActiveIndicator className={`indicator ${props.isActive ? 'active' : ''}`} />
+    </MenuItemText>
+  );
+};
+
+type MenuKeyType =
+  | 'home'
+  | 'trading'
+  | 'instrument'
+  | 'partnership'
+  | 'platform'
+  | 'market-analysis'
+  | 'academy'
+  | 'about-us';
+
+interface SubmenuInterface {
+  label: string;
+  desc: string;
+  path?: string;
+}
+
+interface SubmenuItemInterface {
+  title: string;
+  subMenu: Array<SubmenuInterface>;
+}
+
+interface MenuItemInterface {
+  key: MenuKeyType;
+  label: string;
+  path: string;
+  submenuData?: SubmenuItemInterface;
+}
+
+export const menuList: Array<MenuItemInterface> = [
+  {
+    key: 'home',
+    label: 'Home',
+    path: '/'
+  },
+  {
+    key: 'trading',
+    label: 'Trading',
+    path: '/trading',
+    submenuData: {
+      title: 'Trading',
+      subMenu: [
+        { label: 'Account Type', desc: 'Pilih jenis akun trading Anda', path: '/account-type' },
+        { label: 'Instrument', desc: 'Produk trading', path: '/instruments' },
+        {
+          label: 'Spread & Leverage',
+          desc: 'Keunggulan spread dan leverage dari TPFx',
+          path: '/spread-leverage'
+        },
+        {
+          label: 'Deposit & Withdraw',
+          desc: 'Keunggulan deposit dan withdraw di TPFx',
+          path: '/deposit-withdraw'
+        }
+      ]
+    }
+  },
+  // {
+  //   key: 'instrument',
+  //   label: 'Instrument',
+  //   path: '/instrument',
+  //   submenuData: {
+  //     title: 'Instrument',
+  //     subMenu: [
+  //       { label: 'Forex', desc: 'Trading lebih dari 20 pasang mata uang', path: '/forex' },
+  //       { label: 'Crude Oil', desc: 'Trading di minyak mentah', path: '/crude-oil' },
+  //       {
+  //         label: 'Indices & Dow Jones',
+  //         desc: 'Indeks saham Asia dan AS siap Anda tradingkan',
+  //         path: '/indices-dow-jones'
+  //       }
+  //     ]
+  //   }
+  // },
+  {
+    key: 'partnership',
+    label: 'Partnership',
+    path: '/partnership',
+    submenuData: {
+      title: 'Partnership',
+      subMenu: [
+        { label: 'IB Program', desc: 'Dapatkan keuntungan menjadi IB di TPFx', path: '/ib-program' }
+      ]
+    }
+  },
+  {
+    key: 'platform',
+    label: 'Platform',
+    path: '/platform',
+    submenuData: {
+      title: 'Platform',
+      subMenu: [
+        { label: 'MT4', desc: 'Platform trading terbaik', path: '/mt4' },
+        { label: 'Calculator', desc: 'Hitung keuntungan trading Anda', path: '/calculator' }
+      ]
+    }
+  },
+  {
+    key: 'market-analysis',
+    label: 'Market Analysis',
+    path: '/market-analysis',
+    submenuData: {
+      title: 'Market Analysis',
+      subMenu: [
+        { label: 'News', desc: 'Dapatkan berita penting yang akan datang', path: '/news' },
+        {
+          label: 'Economic Calendar',
+          desc: 'Pelajari perilisan data penting yang akan datang',
+          path: '/economic-calendar'
+        }
+      ]
+    }
+  },
+  {
+    key: 'academy',
+    label: 'Academy',
+    path: '/academy',
+    submenuData: {
+      title: 'Academy',
+      subMenu: [
+        { label: 'Webinar ', desc: 'Dapatkan informasi webinar', path: '/webinar' },
+        { label: 'E-Book', desc: 'Pelajari ilmu trading dari TPFx', path: '/e-book' }
+      ]
+    }
+  },
+  {
+    key: 'about-us',
+    label: 'Tentang Kami',
+    path: '/about-us',
+    submenuData: {
+      title: 'About Us',
+      subMenu: [
+        {
+          label: 'Company Profile',
+          desc: 'Pelajari lebih jauh tentang TPFx',
+          path: '/company-profile'
+        },
+        { label: 'license', desc: 'Regulasi dari TPFx', path: '/license' },
+        { label: 'Gallery', desc: 'Kenal lebih jauh dengan TPFx', path: '/gallery' },
+        { label: 'Contact Us', desc: 'Hubungi Kami lebih lanjut', path: '/contact-us' }
+      ]
+    }
+  }
 ];
 
-function classNames(...classes: Array<string>) {
-  return classes.filter(Boolean).join(' ');
+const StyledNavbarContainer = styled.div`
+  height: 74px;
+  z-index: 1000;
+  ${tw` shadow-lg text-neutral-content bg-primary-gray-4 sticky top-0 w-full px-6 flex `}
+
+  .navbar-desktop {
+    @media (max-width: 1120px) {
+      display: none;
+    }
+  }
+  .navbar-mobile {
+    display: none;
+    @media (max-width: 1120px) {
+      display: flex;
+    }
+  }
+`;
+
+const StyledSubmenuContainer = styled.div`
+  background-color: rgba(34, 34, 35, 0.8);
+  left: 0;
+  top: 68px;
+  ${tw`absolute w-full flex overflow-hidden`}
+  ${({ isShown }: { isShown: boolean }) => (isShown ? '' : 'transform: scaleY(0)')};
+  transform-origin: top;
+  transition: all 0.05s ease-in;
+`;
+const SubmenuContainer = ({ isOpen, children }: { isOpen: boolean; children: ReactNode }) => {
+  return <StyledSubmenuContainer isShown={isOpen}>{children}</StyledSubmenuContainer>;
+};
+
+export interface NavbarRefInterface {
+  closeMenu: () => void;
+}
+export interface NavbarPropsInterface {
+  navbarRef: MutableRefObject<NavbarRefInterface | undefined>;
 }
 
-export default function Navbar() {
+const Navbar = ({ navbarRef }: NavbarPropsInterface) => {
+  const router = useRouter();
+  const [activeRoute, setActiveRoute] = useState<string>('/');
+  const [selectedMenu, setSelectedMenu] = useState<MenuItemInterface | null>(null);
+
+  useEffect(() => {
+    let route = router.pathname as typeof activeRoute;
+    route = route.split('/')[1] || 'home';
+
+    setActiveRoute(route);
+  }, [router.pathname]);
+
+  const handleClickMenu = (data: typeof menuList[0]) => () => {
+    if (selectedMenu === data) {
+      return handleCloseSubmenu();
+    }
+    if (data.submenuData) {
+      const menu = menuList.find((menu) => menu.key === data.key) || null;
+      setSelectedMenu(menu);
+    } else {
+      handleCloseSubmenu();
+    }
+  };
+
+  const handleCloseSubmenu = () => setSelectedMenu(null);
+
+  useImperativeHandle(navbarRef, () => ({
+    closeMenu: handleCloseSubmenu
+  }));
+
   return (
-    <Disclosure as="nav" className="bg-gray-800">
-      {({ open }) => (
-        <>
-          <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-            <div className="relative flex items-center justify-between h-16">
-              <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-                {/* Mobile menu button*/}
-                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-                  <span className="sr-only">Open main menu</span>
-                  {open ? (
-                    <XIcon className="block h-6 w-6" aria-hidden="true" />
-                  ) : (
-                    <MenuIcon className="block h-6 w-6" aria-hidden="true" />
-                  )}
-                </Disclosure.Button>
-              </div>
-              <div className="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
-                <div className="flex-shrink-0 flex items-center">
-                  <Image
-                    width={64}
-                    height={64}
-                    className="block lg:hidden h-8 w-auto"
-                    src="https://tailwindui.com/img/logos/workflow-mark-indigo-500.svg"
-                    alt="Workflow"
-                  />
-                  <Image
-                    width={64}
-                    height={64}
-                    className="hidden lg:block h-8 w-auto"
-                    src="https://tailwindui.com/img/logos/workflow-logo-indigo-500-mark-white-text.svg"
-                    alt="Workflow"
-                  />
-                </div>
-                <div className="hidden sm:block sm:ml-6">
-                  <div className="flex space-x-4">
-                    {navigation.map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        className={classNames(
-                          item.current
-                            ? 'bg-gray-900 text-white'
-                            : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                          'px-3 py-2 rounded-md text-sm font-medium'
-                        )}
-                        aria-current={item.current ? 'page' : undefined}
-                      >
-                        {item.name}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-                <button
-                  type="button"
-                  className="bg-gray-800 p-1 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
-                >
-                  <span className="sr-only">View notifications</span>
-                  <BellIcon className="h-6 w-6" aria-hidden="true" />
-                </button>
-
-                {/* Profile dropdown */}
-                <Menu as="div" className="ml-3 relative">
-                  <div>
-                    <Menu.Button className="bg-gray-800 flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
-                      <span className="sr-only">Open user menu</span>
-                      <Image
-                        width={64}
-                        height={64}
-                        className="h-8 w-8 rounded-full"
-                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                        alt=""
-                      />
-                    </Menu.Button>
-                  </div>
-                  <Transition
-                    as={Fragment}
-                    enter="transition ease-out duration-100"
-                    enterFrom="transform opacity-0 scale-95"
-                    enterTo="transform opacity-100 scale-100"
-                    leave="transition ease-in duration-75"
-                    leaveFrom="transform opacity-100 scale-100"
-                    leaveTo="transform opacity-0 scale-95"
-                  >
-                    <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <a
-                            href="#"
-                            className={classNames(
-                              active ? 'bg-gray-100' : '',
-                              'block px-4 py-2 text-sm text-gray-700'
-                            )}
-                          >
-                            Your Profile
-                          </a>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <a
-                            href="#"
-                            className={classNames(
-                              active ? 'bg-gray-100' : '',
-                              'block px-4 py-2 text-sm text-gray-700'
-                            )}
-                          >
-                            Settings
-                          </a>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <a
-                            href="#"
-                            className={classNames(
-                              active ? 'bg-gray-100' : '',
-                              'block px-4 py-2 text-sm text-gray-700'
-                            )}
-                          >
-                            Sign out
-                          </a>
-                        )}
-                      </Menu.Item>
-                    </Menu.Items>
-                  </Transition>
-                </Menu>
-              </div>
+    <StyledNavbarContainer>
+      <div className="navbar max-w-7xl flex m-auto flex-1">
+        <div className="flex-1" onClick={handleCloseSubmenu}>
+          <Link href="/" passHref>
+            <div className="cursor-pointer">
+              <Image alt="tpfx-logo" src="/images/Tpfx.png" height={44.67} width={100} />
             </div>
-          </div>
-
-          <Disclosure.Panel className="sm:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => (
-                <Disclosure.Button
-                  key={item.name}
-                  as="a"
-                  href={item.href}
-                  className={classNames(
-                    item.current
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                    'block px-3 py-2 rounded-md text-base font-medium'
-                  )}
-                  aria-current={item.current ? 'page' : undefined}
-                >
-                  {item.name}
-                </Disclosure.Button>
+          </Link>
+        </div>
+        <div className="navbar-desktop">
+          {menuList.map((list, i) => {
+            if (list.path !== '/')
+              return (
+                <MenuItem
+                  {...list}
+                  key={i}
+                  isActive={list.key === activeRoute}
+                  handleClick={handleClickMenu(list)}
+                />
+              );
+          })}
+          <Divider />
+          <a href="https://clientarea.tpfx.co.id/" target="_blank" rel="noreferrer">
+            <Button variant="primary" paddingHorizontal={24} paddingVertical={6}>
+              <Text fontWeight={600} className="text-white">
+                Client Area
+              </Text>
+            </Button>
+          </a>
+        </div>
+        <div className="navbar-mobile">
+          <label className="btn btn-square btn-ghost" htmlFor="my-drawer-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              className="inline-block w-6 h-6 stroke-current"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              ></path>
+            </svg>
+          </label>
+        </div>
+      </div>
+      <SubmenuContainer isOpen={!!selectedMenu}>
+        <div className="max-w-7xl flex justify-center flex-1 px-6 mt-5 mb-12 ">
+          <div className="flex-1 px-9 ">
+            <Text fontSize={24} textTransform="capitalize" fontWeight={600} className="text-white">
+              {selectedMenu?.submenuData?.title}
+            </Text>
+            <div className="flex">
+              {selectedMenu?.submenuData?.subMenu.map((submenu, i) => (
+                <Link key={i} href={selectedMenu.path + submenu.path} passHref>
+                  <div className="mt-3 mr-4 cursor-pointer ">
+                    <Text
+                      fontSize={18}
+                      textTransform="capitalize"
+                      fontWeight={600}
+                      className="mb-1 text-primary-gold-1 hover:text-white "
+                    >
+                      {submenu.label}
+                    </Text>
+                    <Text
+                      textTransform="capitalize"
+                      fontWeight={400}
+                      fontFamily="Inter"
+                      className="text-white flex max-w-[240px]"
+                    >
+                      {submenu.desc}
+                    </Text>
+                  </div>
+                </Link>
               ))}
             </div>
-          </Disclosure.Panel>
-        </>
-      )}
-    </Disclosure>
+          </div>
+        </div>
+      </SubmenuContainer>
+    </StyledNavbarContainer>
   );
-}
+};
+
+export default Navbar;

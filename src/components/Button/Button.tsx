@@ -5,15 +5,20 @@ import tw from 'twin.macro';
 
 const ButtonStyled = styled.button<ButtonProps>`
   border: 1px solid;
-  ${tw`bg-primary-gold-1 text-black border-primary-gold-1`}
-  ${tw`w-full text-white py-1.5 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed`}
+  padding: ${({ paddingHorizontal, paddingVertical }) =>
+    `${paddingVertical || 12}px ${paddingHorizontal || 42}px`};
+  ${({ variant }) =>
+    variant !== 'secondary'
+      ? tw`bg-primary-gold-1 disabled:bg-gray-600 text-black border-primary-gold-1 text-white disabled:border-gray-700`
+      : tw`border-primary-gold-1 hover:text-white text-primary-gold-1 hover:bg-primary-gold-1 hover:border-white`}
+  ${tw`border-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed`}
   &:hover:enabled {
-    ${tw`bg-primary-gray-4`}
+    ${({ variant }) => (variant !== 'secondary' ? tw`bg-primary-gray-4` : tw`bg-primary-gold-1`)}
   }
 `;
 
 export const Button = (props: ButtonProps) => (
-  <ButtonStyled {...props} className="px-">
+  <ButtonStyled {...props} className={props.className}>
     {props.children}
   </ButtonStyled>
 );

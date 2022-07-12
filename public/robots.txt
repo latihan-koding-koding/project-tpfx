@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://tpfx.co.id
+
+# Sitemaps
+Sitemap: https://tpfx.co.id/sitemap.xml
